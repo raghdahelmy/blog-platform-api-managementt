@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PostController;
+use App\Http\Controllers\Api\CommentController;
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -27,6 +28,12 @@ Route::controller(AuthController::class)->middleware('auth:api')->group(function
     Route::post('/posts', 'store');
     Route::get('/posts', 'index');
     Route::get('/posts/{id}','show');
+    Route::put('/posts/{id}','update');
+    Route::delete('/posts/{id}','destroy');
+});
 
 
+//CommentController
+Route::controller(CommentController::class)->middleware('auth:api')->group(function () {
+    Route::post('/posts/{id}/comments','store');
 });

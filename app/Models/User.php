@@ -18,6 +18,10 @@ public function posts()
 {
     return $this->hasMany(Post::class);
 }
+public function comments()
+{
+    return $this->hasMany(Comment::class);
+}
 
 public function getJWTIdentifier()
     {
@@ -30,6 +34,7 @@ public function getJWTIdentifier()
     }
 
 
+
     /**
      * The attributes that are mass assignable.
      *
@@ -39,6 +44,7 @@ public function getJWTIdentifier()
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**
@@ -62,5 +68,7 @@ public function getJWTIdentifier()
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+
+
     }
 }

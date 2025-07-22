@@ -10,6 +10,8 @@ use App\Http\Resources\PostResource;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
+use Illuminate\Support\Facades\Cache;
+
 
 class PostController extends Controller
 {
@@ -22,28 +24,41 @@ class PostController extends Controller
     public function index(request $request)
     {
         //
-        $query = Post::with('user');
-        if ($request->has('category')) {
-            $query->where('category', $request->category);}
+        $page = $request->get('page', 1);
+        $search   = $request->get('search', '');
+        $category = $request->get('category', '');
+        $author   = $request->get('author', '');
+        $from     = $request->get('from', '');
+        $to       = $request->get('to', '');
 
-             if ($request->has('author')) {
-        $query->where('user_id', $request->author);
-    }
+        $cacheKey = "posts_page_{$page}_search_{$search}_category_{$category}_author_{$author}_from_{$from}_to_{$to}";
+        $posts = Cache::remember($cacheKey, 60, function () use ($request) {
 
-    if ($request->has('from')) {
-        $query->whereDate('created_at', '>=', $request->from);
-    }
+            $query = Post::with('user');
+            if ($request->has('category')) {
+                $query->where('category', $request->category);
+            }
 
-    if ($request->has('to')) {
-        $query->whereDate('created_at', '<=', $request->to);
-    }
+            if ($request->has('author')) {
+                $query->where('user_id', $request->author);
+            }
 
-     if ($request->has('search')) {
-        $query->where('title', 'like', '%' . $request->search . '%');
-    }
+            if ($request->has('from')) {
+                $query->whereDate('created_at', '>=', $request->from);
+            }
+
+            if ($request->has('to')) {
+                $query->whereDate('created_at', '<=', $request->to);
+            }
+
+            if ($request->has('search')) {
+                $query->where('title', 'like', '%' . $request->search . '%');
+            }
 
 
-        $posts = $query->latest()->paginate(10);
+            // $posts = $query->latest()->paginate(10);
+            return $query->latest()->paginate(10);
+        });
         return $this->success(PostResource::collection($posts), 'Posts fetched successfully', 200);
     }
 
@@ -70,14 +85,17 @@ class PostController extends Controller
     {
         //
 
-         $post = Post::with('user')->find($id);
+        $post = Post::with('user')->find($id);
 
-    if (!$post) {
-        return $this->error('Post not found', 404);
-    }
+        if (!$post) {
+            return $this->error('Post not found', 404);
+        }
 
-    return $this->success(
-        new PostResource($post),'Post fetched successfully',200);
+        return $this->success(
+            new PostResource($post),
+            'Post fetched successfully',
+            200
+        );
     }
 
     /**
@@ -86,29 +104,31 @@ class PostController extends Controller
     public function update(UpdatePostRequest $request, $id)
     {
         //
-$post = Post::find($id);
+        $post = Post::find($id);
 
-    if (!$post) {
-        return $this->error('Post not found', 404);
-    }
+        if (!$post) {
+            return $this->error('Post not found', 404);
+        }
 
-$user = Auth::user();
-   if (
-    $user->hasRole('admin') ||
-    ($user->hasRole('author') && $user->id === $post->user_id)
-) {
-    $post->update([
-        'title'    => $request->title,
-        'content'  => $request->content,
-        'category' => $request->category,
-    ]);
+        $user = Auth::user();
+        if (
+            $user->hasRole('admin') ||
+            ($user->hasRole('author') && $user->id === $post->user_id)
+        ) {
+            $post->update([
+                'title'    => $request->title,
+                'content'  => $request->content,
+                'category' => $request->category,
+            ]);
 
-        return $this->success(
-            new PostResource($post),'Post updated successfully',200);
-    }
+            return $this->success(
+                new PostResource($post),
+                'Post updated successfully',
+                200
+            );
+        }
 
-    return $this->error('You are not allowed to update this post', 403);
-
+        return $this->error('You are not allowed to update this post', 403);
     }
 
     /**
@@ -118,23 +138,23 @@ $user = Auth::user();
     {
         //
 
-         $post = Post::find($id);
+        $post = Post::find($id);
 
-    if (!$post) {
-        return $this->error('Post not found', 404);
-    }
+        if (!$post) {
+            return $this->error('Post not found', 404);
+        }
 
-    $user = Auth::user();
+        $user = Auth::user();
 
-    if (
-        $user->hasRole('admin') ||
-        ($user->hasRole('author') && $user->id === $post->user_id)
-    ) {
-        $post->delete();
+        if (
+            $user->hasRole('admin') ||
+            ($user->hasRole('author') && $user->id === $post->user_id)
+        ) {
+            $post->delete();
 
-        return $this->success(null, 'Post deleted successfully', 200);
-    }
+            return $this->success(null, 'Post deleted successfully', 200);
+        }
 
-    return $this->error('You are not allowed to delete this post', 403);
+        return $this->error('You are not allowed to delete this post', 403);
     }
 }

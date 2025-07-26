@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Cache;
 class PostController extends Controller
 {
 
+
     use ApiResponseTrait;
 
     /**
@@ -110,6 +111,8 @@ class PostController extends Controller
             return $this->error('Post not found', 404);
         }
 
+        /** @var \App\Models\User $user */
+
         $user = Auth::user();
         if (
             $user->hasRole('admin') ||
@@ -144,6 +147,8 @@ class PostController extends Controller
             return $this->error('Post not found', 404);
         }
 
+
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         if (
